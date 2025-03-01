@@ -1,4 +1,4 @@
-# ===== COPIA DE DEPENDENCIAS =====
+# Dependencias
 FROM node:21-alpine3.19 as deps
 
 WORKDIR /usr/src/app
@@ -10,32 +10,41 @@ RUN npm install
 
 
 
-# ===== COPIA DE LA APLICACION =====
+
+# Builder - Construye la aplicación
 FROM node:21-alpine3.19 as build
 
 WORKDIR /usr/src/app
 
+# Copiar de deps, los módulos de node
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 
+# Copiar todo el codigo fuente de la aplicación
 COPY . .
 
+# RUN npm run test
 RUN npm run build
 
 RUN npm ci -f --only=production && npm cache clean --force
 
 
 
-# ===== CREACION DE LA IMAGEN FINAL =====
+# Crear la imagen final de Docker
 FROM node:21-alpine3.19 as prod
 
 WORKDIR /usr/src/app
 
+
 COPY --from=build /usr/src/app/node_modules ./node_modules
+
+# Copiar la carpeta de DIST
 COPY --from=build /usr/src/app/dist ./dist
+
 
 ENV NODE_ENV=production
 
 USER node
+
 
 EXPOSE 8000
 
